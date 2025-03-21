@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CSGO Case ETF Tracker - lastETFPrice</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.cdnfonts.com/css/counter-strike" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(to bottom right, #0f2027, #203a43, #2c5364);
+      color: #eee;
+      text-align: center;
+      padding: 1rem;
+      margin: 0;
+      overflow-x: hidden;
+    }
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      background-color: rgba(0, 0, 0, 0.8);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(6px);
+    }
+    nav h1 {
+      font-family: 'Counter-Strike';
+      font-size: 1.8rem;
+      color: #04d675;
+      margin: 0;
+    }
+    nav a {
+      color: #fff;
+      margin-left: 1.5rem;
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.3s;
+    }
+    nav a:hover {
+      color: #04d675;
+    }
+    header, section {
+      padding: 1.5rem 1rem;
+    }
+    canvas {
+      max-width: 100%;
+      width: 100%;
+      height: auto;
+      max-height: 360px;
+      margin: 0 auto;
+      display: block;
+    }
+    button, a.button {
+      margin-top: 1rem;
+      padding: 0.6rem 1.2rem;
+      font-size: 1rem;
+      background-color: #04d675;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: background 0.3s ease;
+    }
+    button:hover, a.button:hover {
+      background-color: #03b164;
+    }
+    @keyframes pulseGlow {
+      0% { box-shadow: 0 0 5px rgba(4, 214, 117, 0.5); }
+      50% { box-shadow: 0 0 20px rgba(4, 214, 117, 0.9); }
+      100% { box-shadow: 0 0 5px rgba(4, 214, 117, 0.5); }
+    }
+    h1, h2, h3 {
+      font-weight: 600;
+    }
+    h1 {
+      font-size: 2.5rem;
+    }
+    h2 {
+      font-size: 1.5rem;
+    }
+    p, span {
+      font-size: 1rem;
+    }
+    .price-box {
+      background-color: #04d675;
+      border-radius: 14px;
+      padding: 1rem 1.5rem;
+      font-size: 1.75rem;
+      font-weight: bold;
+      color: white;
+      display: inline-block;
+      animation: pulseGlow 2s infinite ease-in-out;
+    }
+    .card {
+      max-width: 800px;
+      margin: 2rem auto;
+      background-color: #1e1e1e;
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 0 20px rgba(4, 214, 117, 0.2);
+      text-align: center;
+    }
+    .text-block {
+      max-width: 700px;
+      margin: 0 auto;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <h1>CS2 ETF</h1>
+    <div>
+      <a href="#">Home</a>
+      <a href="#chart">Chart</a>
+      <a href="#about">About</a>
+    </div>
+  </nav>
+
+  <header>
+  <h1 style="color: #eeee;">CS2 Case ETF</h1>
+  <p style="color: #ccc; max-width: 600px; margin: 0 auto 1rem; font-size: 1.1rem;">
+    Invest in the first CS2 Case ETF — a crypto-backed token that rises and falls with real CS2 case prices. Tracked hourly. Secured on-chain.
+  </p>
+  <p style="color: #fff; font-size: 1.25rem; font-weight: 600; max-width: 650px; margin: 0 auto 1rem;">
+    🚀 The launch is near. Be part of the first wave and stake your claim in the case economy.
+  </p>
+  <a href="#" class="button">
+    🚀 Join the Launch
+  </a>
+</header>
+
+  <section id="chart" class="card">
+    <h2>CS2 Case ETF - Price & Chart</h2>
+    <div class="price-box" style="margin: 1rem 0;">
+      <span id="lastPrice">$1</span>
+    </div>
+    <canvas id="etfChart"></canvas>
+  </section>
+
+<section class="card" data-aos="fade-up" data-aos-delay="100">
+  <div class="text-block">
+    <h2 style="color: #04d675; border-bottom: 1px solid #2d2d2d; padding-bottom: 0.5rem;">💼 What Is CSGO Case ETF?</h2>
+    <p style="color: #ccc; line-height: 1.6;">
+      CSGO Case ETF is a crypto token that lets you invest in the value of rare CSGO cases — without actually buying or storing them.
+    </p>
+    <p style="color: #ccc; line-height: 1.6;">
+      Instead of trading individual cases, you just hold one token that automatically tracks a group of the most popular cases. As those case prices go up or down, your token balance changes to match. It's like owning a digital portfolio of loot boxes.
+    </p>
+  </div>
+</section>
+
+<section class="card">
+  <div class="text-block">
+    <h2 style="color: #04d675;">🎮 Why CSGO Cases?</h2>
+    <p style="color: #ccc; line-height: 1.6;">
+      CSGO cases are more than just loot boxes — they're digital collectibles. Over the years, many have gone up a lot in value due to scarcity and player demand.
+    </p>
+    <p style="color: #ccc; line-height: 1.6;">
+      But buying and managing cases can be a hassle. That’s where our ETF comes in.
+    </p>
+  </div>
+</section>
+
+<section class="card">
+  <div class="text-block">
+    <h2 style="color: #04d675;">🔄 How It Works (The Simple Version)</h2>
+    <p style="color: #ccc; line-height: 1.6;">
+      We track the price of 4 popular CSGO cases:
+    </p>
+    <ul style="color: #eee; line-height: 1.6; padding-left: 1.2rem; text-align: left;">
+      <li>📦 Operation Phoenix Case</li>
+      <li>📦 Chroma Case</li>
+      <li>📦 Chroma 2 Case</li>
+      <li>📦 Glove Case</li>
+    </ul>
+    <p style="color: #ccc; line-height: 1.6;">Every hour:</p>
+    <ul style="color: #eee; line-height: 1.6; padding-left: 1.2rem; text-align: left;">
+      <li>✅ We check the average price of those cases.</li>
+      <li>✅ Our smart contract updates the value of the token.</li>
+      <li>✅ Your balance of tokens goes up or down to match.</li>
+    </ul>
+    <p style="color: #ccc; line-height: 1.6;">
+      This process is called rebasing, and it happens automatically.
+    </p>
+  </div>
+</section>
+
+<section class="card">
+  <div class="text-block">
+    <h2 style="color: #04d675;">🧠 What You’re Really Holding</h2>
+    <p style="color: #ccc; line-height: 1.6;">
+      You’re not buying actual CSGO cases. You’re holding a crypto token that mirrors their value.
+    </p>
+    <p style="color: #ccc; line-height: 1.6;">
+      So if the cases are doing well, your token grows in balance — like magic, but transparent and fully on-chain. If the case prices drop, your token supply adjusts downward too. Just like any investment, there’s risk and reward.
+    </p>
+  </div>
+</section>
+
+<section class="card">
+  <div class="text-block">
+    <h2 style="color: #04d675;">🛒 How To Use It</h2>
+    <ul style="color: #eee; line-height: 1.6; padding-left: 1.2rem; text-align: left;">
+      <li>🔁 Buy the token using BNB on a decentralized exchange.</li>
+      <li>💼 Hold it in your wallet — no need to stake or do anything.</li>
+      <li>💸 Sell it anytime back into BNB or other tokens.</li>
+    </ul>
+    <p style="color: #ccc; line-height: 1.6;">
+      No case storage. No trading fees. Just clean exposure to a trending market in gaming.
+    </p>
+  </div>
+</section>
+
+<section class="card">
+  <div class="text-block">
+    <h2 style="color: #04d675;">🧪 Under the Hood</h2>
+    <ul style="color: #eee; line-height: 1.6; padding-left: 1.2rem; text-align: left;">
+      <li>⚙️ Powered by Binance Smart Chain</li>
+      <li>📊 Prices fetched via public APIs</li>
+      <li>🧬 Rebase logic is fully open-source</li>
+      <li>🤖 Automated using GitHub Actions</li>
+    </ul>
+  </div>
+</section>
+
+<section class="card">
+  <div class="text-block">
+    <h2 style="color: #f39c12;">⚠️ Keep In Mind</h2>
+    <ul style="color: #eee; line-height: 1.6; padding-left: 1.2rem; text-align: left;">
+      <li>📉 Your token balance can go down if case prices fall</li>
+      <li>🌐 We rely on outside APIs for prices</li>
+      <li>⚠️ All crypto carries some risk</li>
+    </ul>
+  </div>
+</section>
+
+<section class="card">
+  <div class="text-block">
+    <h2 style="color: #04d675; border-bottom: 1px solid #2d2d2d; padding-bottom: 0.5rem;">Why We Built CS2 ETF</h2>
+    <p style="color: #ccc; line-height: 1.6;">
+      Buying and selling CS2 cases can be slow, expensive, and filled with marketplace fees. We built the CS2 ETF to give traders and fans instant exposure to the case market — without needing to buy and sell digital items. It's the streamlined way to invest in CS2 skin economy — powered by crypto.
+    </p>
+  </div>
+</section>
+
+
+
+
+
+
+
+
+
+
+
+  <script>
+    const SUPABASE_URL = "https://gdmvbhyulbsdzjgbsdsn.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdkbXZiaHl1bGJzZHpqZ2JzZHNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI1Mjc3MjUsImV4cCI6MjA1ODEwMzcyNX0.Y1dKOGdnx_H7mTF1XljTM1yuL0DOzgxdVKBqwpFtwEE";
+    const TABLE_NAME = "etf_prices";
+
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const provider = new ethers.providers.JsonRpcProvider("https://data-seed-prebsc-1-s1.binance.org:8545");
+    const contract = new ethers.Contract(
+      "0xA62B7731Cc264529C309DB167e41aC619592Ac11",
+      ["function lastETFPrice() view returns (uint256)"],
+      provider
+    );
+
+    let etfChart;
+
+    function initializeChart() {
+      const ctx = document.getElementById("etfChart").getContext("2d");
+      etfChart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: "ETF Price (US$)",
+              data: [],
+              borderColor: "#04d675",
+              borderWidth: 2,
+              pointRadius: 4,
+              fill: false,
+              tension: 0.4,
+              pointBackgroundColor: '#04d675',
+              pointBorderColor: '#fff',
+              pointHoverRadius: 6,
+              animation: {
+                duration: 1000,
+                easing: 'easeInOutQuad'
+              },
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: {
+            duration: 1200,
+            easing: 'easeOutQuart'
+          },
+          scales: {
+            x: {
+              ticks: { color: "#ccc" },
+              grid: { color: "#333" }
+            },
+            y: {
+              beginAtZero: false,
+              ticks: { color: "#ccc" },
+              grid: { color: "#333" }
+            }
+          },
+          plugins: {
+            legend: { labels: { color: "#ccc" } },
+          },
+        },
+      });
+
+      fetchHistory();
+    }
+
+    async function fetchHistory() {
+      try {
+        const { data, error } = await supabaseClient.from(TABLE_NAME).select("*").order("timestamp", { ascending: true });
+        if (error || !Array.isArray(data)) throw new Error("Error fetching data");
+
+        const cleaned = data.filter(row => {
+          const validTimestamp = !!row.timestamp && !isNaN(Date.parse(row.timestamp));
+          const parsed = parseFloat(row.price);
+          return validTimestamp && !isNaN(parsed);
+        });
+
+        const timestamps = cleaned.map(row => new Date(row.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+        const prices = cleaned.map(row => parseFloat(row.price).toFixed(2));
+
+        document.getElementById("lastPrice").innerText = `US$ ${prices[prices.length - 1]}`;
+
+        etfChart.data.labels = timestamps;
+        etfChart.data.datasets[0].data = prices;
+        etfChart.update();
+      } catch (err) {
+        console.error("Error loading chart:", err);
+        document.getElementById("lastPrice").innerText = "Error!";
+      }
+    }
+
+    window.onload = () => {
+      initializeChart();
+    };
+  </script>
+</body>
+</html>
