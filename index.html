@@ -162,6 +162,12 @@
   <div class="price-box" id="change12h">12h: +0.00%</div>
   <div class="price-box" id="change24h">24h: +0.00%</div>
 </div>
+
+<div style="margin: 1rem 0;">
+  <button id="toggle12h" class="button" style="margin-right: 0.5rem;">🕛 12 Hour</button>
+  <button id="toggle24h" class="button">🕛 24 Hour</button>
+</div>
+
     <canvas id="etfChart"></canvas>
   </section>
 
@@ -294,6 +300,7 @@
       provider
     );
 
+	let selectedRange = 12; // default to 12h
     let etfChart;
 
     function initializeChart() {
@@ -419,7 +426,9 @@ applyChangeBox("change24h", "24h", change24h.price);
 
     // Build chart data for last 12 hours
     const twelveHoursAgo = now - 12 * 60 * 60 * 1000;
-    const chartEntries = entries.filter(e => e.timestamp >= twelveHoursAgo);
+    const chartStart = now - selectedRange * 60 * 60 * 1000;
+const chartEntries = entries.filter(e => e.timestamp >= chartStart);
+
 
     const labels = chartEntries.map(e =>
       new Date(e.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -444,6 +453,19 @@ applyChangeBox("change24h", "24h", change24h.price);
     window.onload = () => {
       initializeChart();
     };
+	
+	document.getElementById("toggle12h").addEventListener("click", () => {
+  selectedRange = 12;
+  fetchHistory();
+});
+
+document.getElementById("toggle24h").addEventListener("click", () => {
+  selectedRange = 24;
+  fetchHistory();
+});
+
+	
+	
   </script>
 </body>
 </html>
