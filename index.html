@@ -90,16 +90,29 @@
     p, span {
       font-size: 1rem;
     }
-    .price-box {
-      background-color: #04d675;
-      border-radius: 14px;
-      padding: 1rem 1.5rem;
-      font-size: 1.75rem;
-      font-weight: bold;
-      color: white;
-      display: inline-block;
-      animation: pulseGlow 2s infinite ease-in-out;
-    }
+.price-box,
+.negative-box {
+  border-radius: 10px;
+  padding: 0.4rem 0.8rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: white;
+  display: inline-block;
+  animation: pulseGlow 2s infinite ease-in-out;
+  min-width: 80px;
+  text-align: center;
+}
+
+.price-box {
+  background-color: #04d675;
+}
+
+.negative-box {
+  background-color: #e74c3c;
+}
+
+
+	
     .card {
       max-width: 800px;
       margin: 2rem auto;
@@ -144,6 +157,11 @@
     <div class="price-box" style="margin: 1rem 0;">
       <span id="lastPrice">$1</span>
     </div>
+	<div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem;">
+  <div class="price-box" id="change1h">1h: +0.00%</div>
+  <div class="price-box" id="change12h">12h: +0.00%</div>
+  <div class="price-box" id="change24h">24h: +0.00%</div>
+</div>
     <canvas id="etfChart"></canvas>
   </section>
 
@@ -330,30 +348,98 @@
       fetchHistory();
     }
 
-    async function fetchHistory() {
-      try {
-        const { data, error } = await supabaseClient.from(TABLE_NAME).select("*").order("timestamp", { ascending: true });
-        if (error || !Array.isArray(data)) throw new Error("Error fetching data");
+ async function fetchHistory() {
+  try {
+    const now = Date.now();
+    const lookback = 24 * 60 * 60 * 1000; // 24h
+    const since = new Date(now - lookback).toISOString();
 
-        const cleaned = data.filter(row => {
-          const validTimestamp = !!row.timestamp && !isNaN(Date.parse(row.timestamp));
-          const parsed = parseFloat(row.price);
-          return validTimestamp && !isNaN(parsed);
-        });
+    const { data, error } = await supabaseClient
+      .from(TABLE_NAME)
+      .select("*")
+      .gte("timestamp", since)
+      .order("timestamp", { ascending: true });
 
-        const timestamps = cleaned.map(row => new Date(row.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-        const prices = cleaned.map(row => parseFloat(row.price).toFixed(2));
+    if (error || !Array.isArray(data)) throw new Error("Error fetching data");
 
-        document.getElementById("lastPrice").innerText = `US$ ${prices[prices.length - 1]}`;
+    const cleaned = data.filter(row => {
+      const validTimestamp = !!row.timestamp && !isNaN(Date.parse(row.timestamp));
+      const parsed = parseFloat(row.price);
+      return validTimestamp && !isNaN(parsed);
+    });
 
-        etfChart.data.labels = timestamps;
-        etfChart.data.datasets[0].data = prices;
-        etfChart.update();
-      } catch (err) {
-        console.error("Error loading chart:", err);
-        document.getElementById("lastPrice").innerText = "Error!";
-      }
-    }
+    if (!cleaned.length) throw new Error("No data points");
+
+    // Convert timestamps to ms for easier math
+    const entries = cleaned.map(row => ({
+      timestamp: new Date(row.timestamp).getTime(),
+      price: parseFloat(row.price)
+    }));
+
+    const latest = entries[entries.length - 1];
+    document.getElementById("lastPrice").innerText = `US$ ${latest.price.toFixed(2)}`;
+
+    // Helper: get closest data point to given offset
+    const getClosest = (targetMsAgo) => {
+      const target = now - targetMsAgo;
+      return entries.reduce((prev, curr) =>
+        Math.abs(curr.timestamp - target) < Math.abs(prev.timestamp - target) ? curr : prev
+      );
+    };
+
+    const change1h = getClosest(1 * 60 * 60 * 1000);
+    const change12h = getClosest(12 * 60 * 60 * 1000);
+    const change24h = entries[0]; // earliest point is already ~24h ago
+
+    const formatChange = (oldPrice) => {
+      const change = ((latest.price - oldPrice) / oldPrice) * 100;
+      const symbol = change >= 0 ? "+" : "";
+      return `${symbol}${change.toFixed(2)}%`;
+    };
+
+const applyChangeBox = (id, label, oldPrice) => {
+  const element = document.getElementById(id);
+  const change = ((latest.price - oldPrice) / oldPrice) * 100;
+  const symbol = change >= 0 ? "+" : "";
+  element.innerText = `${label}: ${symbol}${change.toFixed(2)}%`;
+
+  if (change < 0) {
+    element.classList.remove("price-box");
+    element.classList.add("negative-box");
+  } else {
+    element.classList.remove("negative-box");
+    element.classList.add("price-box");
+  }
+};
+
+applyChangeBox("change1h", "1h", change1h.price);
+applyChangeBox("change12h", "12h", change12h.price);
+applyChangeBox("change24h", "24h", change24h.price);
+
+
+    // Build chart data for last 12 hours
+    const twelveHoursAgo = now - 12 * 60 * 60 * 1000;
+    const chartEntries = entries.filter(e => e.timestamp >= twelveHoursAgo);
+
+    const labels = chartEntries.map(e =>
+      new Date(e.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    );
+    const prices = chartEntries.map(e => e.price.toFixed(2));
+
+    etfChart.data.labels = labels;
+    etfChart.data.datasets[0].data = prices;
+    etfChart.update();
+
+  } catch (err) {
+    console.error("Error loading chart:", err);
+    document.getElementById("lastPrice").innerText = "Error!";
+    ["change1h", "change12h", "change24h"].forEach(id => {
+      document.getElementById(id).innerText = "N/A";
+    });
+  }
+}
+
+
 
     window.onload = () => {
       initializeChart();
